@@ -1,3 +1,5 @@
+from micropython import const
+
 _REGISTER_CONVERS  = const(0)
 _REGISTER_CONFIG   = const(1)
 _REGISTER_LOTHRESH = const(2)
@@ -72,7 +74,7 @@ class ADS1115:
         self._comp: int = kwargs.get('comp', 3)
         self._gain: float = _GAINS_V[self._pga]
         self._buff = bytearray(2)
-        self.conf = list()
+        self.conf = [0]
         self.set_conf(**kwargs)
 
     def set_conf(self, **kwargs) -> None:
@@ -81,7 +83,7 @@ class ADS1115:
         self._rate = kwargs.get('rate', self._rate)
         self._comp = kwargs.get('comp', self._comp)
         self._gain = _GAINS_V[self._pga]
-        self.conf  = list()
+        self.conf  = [0] * len(self._mux)
         for i in range(len(self._mux)):
             self.conf[i] = (_OS_SINGLE|_MODE_SINGLE|_MUX_CONF[self._mux[i]]|
                             _PGA_CONF[self._pga]|_DR_CONF[self._rate]|self._comp)
