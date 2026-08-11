@@ -2,6 +2,8 @@
 
 The most simplest and cleanest yet fully working `ads1115` 16-bit I2C ADC library ever.
 
+Thanks to [robert-hh/ads1x15](https://github.com/robert-hh/ads1x15).
+
 ---
 - configurable `ADS1115(i2c,**kwargs)`:
 ```    
