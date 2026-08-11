@@ -20,7 +20,7 @@ channels (tuple)
 gain
     0: +/-6.144V range = Gain 2/3
     1: +/-4.096V range = Gain 1
-    2: +/-2.048V range = Gain 2 (default),
+    2: +/-2.048V range = Gain 2 (default)
     3: +/-1.024V range = Gain 4
     4: +/-0.512V range = Gain 8
     5: +/-0.256V range = Gain 16
