@@ -41,7 +41,7 @@ import asyncio
 from machine import I2C
 from ads1115 import ADS1115
 
-ads = ADS1115(i2I2C(0), channel=(4,5))
+ads = ADS1115(I2C(0), channel=(4,5))
 
 
 ### single tight-loop ###
