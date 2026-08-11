@@ -2,8 +2,8 @@ from micropython import const
 
 '''
 OS
-    - Set to start a single-conversion
-    - Get 1 when no conversion is in progress
+    1: Set to start a single-conversion
+    1: Get 1 when no conversion is in progress
     
 MUX
     0: Differential P=AIN0, N=AIN1 (default)
@@ -18,7 +18,7 @@ MUX
 PGA
     0: +/-6.144V range = Gain 2/3
     1: +/-4.096V range = Gain 1
-    2: +/-2.048V range = Gain 2 (default),
+    2: +/-2.048V range = Gain 2 (default)
     3: +/-1.024V range = Gain 4
     4: +/-0.512V range = Gain 8
     5: +/-0.256V range = Gain 16
@@ -105,6 +105,6 @@ class ADS1115:
         self._i2c.readfrom_mem_into(self._addr, _CONF_REG, self._buff)
         if not (self._buff[0] << 8) & (1 << _OS_MASK): return None
         self._i2c.readfrom_mem_into(self._addr, _CONV_REG, self._buff)
-        _ = (self._buff[0] << 8) | self._buff[1]
-        if _ & (1 << 15): _ -= (1 << 16)
-        return _ * self._gain / (1 << 15)
+        _tmp = (self._buff[0] << 8) | self._buff[1]
+        if _tmp & (1 << 15): _tmp -= (1 << 16)
+        return _tmp * self._gain / (1 << 15)
