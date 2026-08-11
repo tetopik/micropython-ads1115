@@ -70,7 +70,7 @@ async def ads_poll():
             print(i, res)
 
 async def main():
-    await asyncio.create_tast(ads_poll())
+    await asyncio.create_task(ads_poll())
 
 asyncio.run(main())
 ```
