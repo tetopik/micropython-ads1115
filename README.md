@@ -3,9 +3,9 @@
 The most simplest and cleanest yet fully working `ads1115` 16-bit I2C ADC library ever.
 
 ---
-- configurable `**kwargs`:
+- configurable `ADS1115(i2c,**kwargs)`:
 ```    
-channel
+channel (tuple)
     0: Differential P=AIN0, N=AIN1 (default)
     1: Differential P=AIN0, N=AIN3
     2: Differential P=AIN1, N=AIN3
@@ -70,6 +70,5 @@ async def ads_poll():
 async def main():
     await asyncio.create_tast(ads_poll())
 
-if __main__ == '__main__':
-    asyncio.run(main())
+asyncio.run(main())
 ```

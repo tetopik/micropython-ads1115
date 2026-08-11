@@ -1,11 +1,11 @@
 from micropython import const
 
 '''
-_OS_MASK:
+OS
     - Set to start a single-conversion
     - Get 1 when no conversion is in progress
     
-_MUX_MASK:
+MUX
     0: Differential P=AIN0, N=AIN1 (default)
     1: Differential P=AIN0, N=AIN3
     2: Differential P=AIN1, N=AIN3
@@ -15,7 +15,7 @@ _MUX_MASK:
     6: Single-ended AIN2
     7: Single-ended AIN3
     
-_PGA_MASK:
+PGA
     0: +/-6.144V range = Gain 2/3
     1: +/-4.096V range = Gain 1
     2: +/-2.048V range = Gain 2 (default),
@@ -23,11 +23,11 @@ _PGA_MASK:
     4: +/-0.512V range = Gain 8
     5: +/-0.256V range = Gain 16
 
-_MODE_MASK:
+MODE
     0: Continuous conversion mode
     1: Power-down single-shot mode (default)
 
-_RATE_MASK:
+RATE
     0:   8 samples per second
     1:  16 samples per second
     2:  32 samples per second
@@ -37,26 +37,25 @@ _RATE_MASK:
     6: 475 samples per second
     7: 860 samples per Second
 
-_CMODE_MASK:
+CMODE
     0: Traditional comparator with hysteresis (default)
     1: Window comparator
 
-_CPOL_MASK:
+CPOL
     0: ALERT/RDY pin is low when active (default)
     1: ALERT/RDY pin is high when active
 
-_CLAT_MASK:
+CLAT
     0: Non-latching comparator (default)
     1: Latching comparator
 
-_CQUE_CONF:
+CQUE
     0: Assert ALERT/RDY after 1 conversion
     1: Assert ALERT/RDY after 2 conversions
     2: Assert ALERT/RDY after 4 conversions
     3: Disable the comparator and put ALERT/RDY in high state (default)
 '''
 
-_GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 _OS_MASK   = const(15)
 _MUX_MASK  = const(12)
 _PGA_MASK  = const(9)
@@ -68,6 +67,7 @@ _CLAT_MASK = const(2)
 _CQUE_MASK = const(0)
 _CONF_REG  = const(1)
 _CONV_REG  = const(0)
+_GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 
 class ADS1115:
     def __init__(self, i2c, **kwargs) -> None:
