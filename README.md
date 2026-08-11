@@ -43,7 +43,7 @@ import asyncio
 from machine import I2C
 from ads1115 import ADS1115
 
-ads = ADS1115(I2C(0), channels=(4,5))
+ads = ADS1115(I2C(0), channels=(0,3))
 
 
 ### single tight-loop ###
@@ -51,7 +51,7 @@ ads = ADS1115(I2C(0), channels=(4,5))
 while True:
     for i in range(2):
         ads.start(i)
-        res = None
+        res = ads.read()
         while res is None:
             res = ads.read()
         print(i, res)
