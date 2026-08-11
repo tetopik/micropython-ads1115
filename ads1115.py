@@ -65,8 +65,10 @@ _CMOD_MASK = const(4)
 _CPOL_MASK = const(3)
 _CLAT_MASK = const(2)
 _CQUE_MASK = const(0)
-_CONF_REG  = const(1)
+
 _CONV_REG  = const(0)
+_CONF_REG  = const(1)
+
 _GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 
 class ADS1115:
