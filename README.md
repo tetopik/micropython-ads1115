@@ -63,7 +63,7 @@ async def ads_poll():
             ads.start(i)
             res = ads.read()
             while res is None:
-                await.asyncio.sleep(0)
+                await asyncio.sleep(0)
                 res = ads.read()
             print(i, res)
 
