@@ -1,101 +1,108 @@
 from micropython import const
 
-_REGISTER_CONVERS  = const(0)
-_REGISTER_CONFIG   = const(1)
-_REGISTER_LOTHRESH = const(2)
-_REGISTER_HITHRESH = const(3)
+'''
+_OS_MASK:
+    - Set to start a single-conversion
+    - Get 1 when no conversion is in progress
+    
+_MUX_MASK:
+    0: Differential P=AIN0, N=AIN1 (default)
+    1: Differential P=AIN0, N=AIN3
+    2: Differential P=AIN1, N=AIN3
+    3: Differential P=AIN2, N=AIN3
+    4: Single-ended AIN0
+    5: Single-ended AIN1
+    6: Single-ended AIN2
+    7: Single-ended AIN3
+    
+_PGA_MASK:
+    0: +/-6.144V range = Gain 2/3
+    1: +/-4.096V range = Gain 1
+    2: +/-2.048V range = Gain 2 (default),
+    3: +/-1.024V range = Gain 4
+    4: +/-0.512V range = Gain 8
+    5: +/-0.256V range = Gain 16
 
-_OS_SINGLE  = const(1 << 15)  # Write: Set to start a single-conversion
-_OS_BUSY    = const(0 << 15)  # Read: Bit=0 when conversion is in progress
-_OS_NOTBUSY = const(1 << 15)  # Read: Bit=1 when no conversion is in progress
+_MODE_MASK:
+    0: Continuous conversion mode
+    1: Power-down single-shot mode (default)
 
-_MUX_CONF = (
-    const(0 << 12),  # Differential P=AIN0, N=AIN1 (default)
-    const(1 << 12),  # Differential P=AIN0, N=AIN3
-    const(2 << 12),  # Differential P=AIN1, N=AIN3
-    const(3 << 12),  # Differential P=AIN2, N=AIN3
-    const(4 << 12),  # Single-ended AIN0
-    const(5 << 12),  # Single-ended AIN1
-    const(6 << 12),  # Single-ended AIN2
-    const(7 << 12))  # Single-ended AIN3
+_RATE_MASK:
+    0:   8 samples per second
+    1:  16 samples per second
+    2:  32 samples per second
+    3:  64 samples per second
+    4: 128 samples per second (default)
+    5: 250 samples per second
+    6: 475 samples per second
+    7: 860 samples per Second
 
-_PGA_CONF = (
-    const(0 << 9),  # +/-6.144V range = Gain 2/3
-    const(1 << 9),  # +/-4.096V range = Gain 1
-    const(2 << 9),  # +/-2.048V range = Gain 2 (default),
-    const(3 << 9),  # +/-1.024V range = Gain 4
-    const(4 << 9),  # +/-0.512V range = Gain 8
-    const(5 << 9))  # +/-0.256V range = Gain 16
+_CMODE_MASK:
+    0: Traditional comparator with hysteresis (default)
+    1: Window comparator
 
-_GAINS_V = (
-    6.144,  # 2/3x
-    4.096,  # 1x
-    2.048,  # 2x
-    1.024,  # 4x
-    0.512,  # 8x
-    0.256)  # 16x
+_CPOL_MASK:
+    0: ALERT/RDY pin is low when active (default)
+    1: ALERT/RDY pin is high when active
 
-_MODE_CONTIN = const(0 << 8)  # Continuous conversion mode
-_MODE_SINGLE = const(1 << 8)  # Power-down single-shot mode (default)
+_CLAT_MASK:
+    0: Non-latching comparator (default)
+    1: Latching comparator
 
-_DR_CONF = (
-    const(0 << 5),  #  128 /   8 samples per second
-    const(1 << 5),  #  250 /  16 samples per second
-    const(2 << 5),  #  490 /  32 samples per second
-    const(3 << 5),  #  920 /  64 samples per second
-    const(4 << 5),  # 1600 / 128 samples per second (default)
-    const(5 << 5),  # 2400 / 250 samples per second
-    const(6 << 5),  # 3300 / 475 samples per second
-    const(7 << 5))  #    - / 860 samples per Second
+_CQUE_CONF:
+    0: Assert ALERT/RDY after 1 conversion
+    1: Assert ALERT/RDY after 2 conversions
+    2: Assert ALERT/RDY after 4 conversions
+    3: Disable the comparator and put ALERT/RDY in high state (default)
+'''
 
-_CMODE_TRAD = const(0 << 4)  # Traditional comparator with hysteresis (default)
-_CMODE_WNDW = const(1 << 4)  # Window comparator
-
-_CPOL_ACTVLO = const(0 << 3)  # ALERT/RDY pin is low when active (default)
-_CPOL_ACTVHI = const(1 << 3)  # ALERT/RDY pin is high when active
-
-_CLAT_NONLAT = const(0 << 2)  # Non-latching comparator (default)
-_CLAT_LATCH  = const(1 << 2)  # Latching comparator
-
-_CQUE_CONF = (
-    const(3),  # 0: Disable the comparator and put ALERT/RDY in high state (default)
-    const(0),  # 1: Assert ALERT/RDY after 1 conversion
-    const(1),  # 2: Assert ALERT/RDY after 2 conversions
-    const(2))  # 3: Assert ALERT/RDY after 4 conversions
-
+_GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
+_OS_MASK   = const(15)
+_MUX_MASK  = const(12)
+_PGA_MASK  = const(9)
+_MODE_MASK = const(8)
+_RATE_MASK = const(5)
+_CMOD_MASK = const(4)
+_CPOL_MASK = const(3)
+_CLAT_MASK = const(2)
+_CQUE_MASK = const(0)
+_CONF_REG  = const(1)
+_CONV_REG  = const(0)
 
 class ADS1115:
     def __init__(self, i2c, **kwargs) -> None:
-        self.i2c = i2c
-        self.addr: int = kwargs.get('addr', 0x48)
-        self._mux: tuple[int] = kwargs.get('channel', (0,))
-        self._pga: int = kwargs.get('gain', 2)
-        self._rate: int = kwargs.get('rate', 4)
-        self._comp: int = kwargs.get('comp', 3)
-        self._gain: float = _GAINS_V[self._pga]
+        self._i2c  = i2c
         self._buff = bytearray(2)
-        self.conf = [0]
-        self.set_conf(**kwargs)
-
-    def set_conf(self, **kwargs) -> None:
-        self._mux  = kwargs.get('channel', self._mux)
-        self._pga  = kwargs.get('gain', self._pga)
-        self._rate = kwargs.get('rate', self._rate)
-        self._comp = kwargs.get('comp', self._comp)
+        self._addr = kwargs.get('addr', 0x48)
+        self._mux  = kwargs.get('channel', (0,))
+        self._pga  = kwargs.get('gain', 2)
+        self._rate = kwargs.get('rate', 4)
+        self._cmod = kwargs.get('cmod', 0)
+        self._cpol = kwargs.get('cpol', 0)
+        self._clat = kwargs.get('clat', 0)
+        self._cque = kwargs.get('cque', 3)
         self._gain = _GAINS_V[self._pga]
-        self.conf  = [0] * len(self._mux)
+
+        self._conf = []
         for i in range(len(self._mux)):
-            self.conf[i] = (_OS_SINGLE|_MODE_SINGLE|_MUX_CONF[self._mux[i]]|
-                            _PGA_CONF[self._pga]|_DR_CONF[self._rate]|self._comp)
+            self._conf.append((1 << _OS_MASK)|(1 << _MODE_MASK)|
+                              (self._mux[i] << _MUX_MASK) |
+                              (self._pga    << _PGA_MASK) |
+                              (self._rate   << _RATE_MASK)|
+                              (self._cmod   << _CMOD_MASK)|
+                              (self._cpol   << _CPOL_MASK)|
+                              (self._clat   << _CLAT_MASK)|
+                              (self._cque   << _CQUE_MASK))
+        self._conf = tuple(self._conf)
 
-    def start_conv(self, idx: int = 0) -> None:
-        self._buff[0], self._buff[1] = self.conf[idx] >> 8, self.conf[idx] & 0xff
-        self.i2c.writeto_mem(self.addr, _REGISTER_CONFIG, self._buff)
+    def start(self, channel: int = 0) -> None:
+        self._buff[0], self._buff[1] = self._conf[channel] >> 8, self._conf[channel] & 0xff
+        self._i2c.writeto_mem(self._addr, _CONF_REG, self._buff)
 
-    def read_conv(self, raw: bool = False) -> None|int|float:
-        self.i2c.readfrom_mem_into(self.addr, _REGISTER_CONFIG, self._buff)
-        if (self._buff[0] << 8) & _OS_BUSY: return None
-        self.i2c.readfrom_mem_into(self.addr, _REGISTER_CONVERS, self._buff)
-        res = (self._buff[0] << 8) | self._buff[1]
-        if res & (1 << 15): res -= (1 << 16)
-        return res if raw else res * self._gain / (1 << 15)
+    def read(self) -> None|float:
+        self._i2c.readfrom_mem_into(self._addr, _CONF_REG, self._buff)
+        if not (self._buff[0] << 8) & (1 << _OS_MASK): return None
+        self._i2c.readfrom_mem_into(self._addr, _CONV_REG, self._buff)
+        _ = (self._buff[0] << 8) | self._buff[1]
+        if _ & (1 << 15): _ -= (1 << 16)
+        return _ * self._gain / (1 << 15)
