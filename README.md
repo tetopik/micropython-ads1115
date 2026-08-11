@@ -5,7 +5,7 @@ The most simplest and cleanest yet fully working `ads1115` 16-bit I2C ADC librar
 ---
 - configurable `ADS1115(i2c,**kwargs)`:
 ```    
-channel (tuple)
+channels (tuple)
     0: Differential P=AIN0, N=AIN1 (default)
     1: Differential P=AIN0, N=AIN3
     2: Differential P=AIN1, N=AIN3

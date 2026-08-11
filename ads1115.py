@@ -74,7 +74,7 @@ class ADS1115:
         self._i2c  = i2c
         self._buff = bytearray(2)
         self._addr = kwargs.get('addr', 0x48)
-        self._mux  = kwargs.get('channel', (0,))
+        self._mux  = kwargs.get('channels', (0,))
         self._pga  = kwargs.get('gain', 2)
         self._rate = kwargs.get('rate', 4)
         self._cmod = kwargs.get('cmod', 0)
