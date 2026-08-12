@@ -43,15 +43,16 @@ import asyncio
 from machine import I2C
 from ads1115 import ADS1115
 
-ads = ADS1115(I2C(0), channels=(0,3))
-results = [0, 0]
+
+channels = (4, 5)  # 4: Single-ended AIN0, 5: Single-ended AIN1
+ads = ADS1115(I2C(0), channels=channels)
+results = [0] * len(channels)
 
 ### infinite loop ###
 while True:
     for i in range(2):
-        results = ads.read_blocking(i)
+        results[i] = ads.read_blocking(i)
     print(*results)
-
 
 ### async polling ###
 async def ads_poll():
