@@ -1,11 +1,11 @@
 # micropython-ads1115
 
-The most simplest and cleanest yet fully working `ads1115` 16-bit I2C ADC library ever.
+The simplest and cleanest yet fully working `ads1115` 16-bit I2C ADC library.
 
 Thanks to [robert-hh/ads1x15](https://github.com/robert-hh/ads1x15).
 
 ---
-- configurable `ADS1115(i2c,**kwargs)`:
+- some of the ADS1115 `**kwargs`:
 ```    
 channels (tuple)
     0: Differential P=AIN0, N=AIN1 (default)
@@ -44,30 +44,21 @@ from machine import I2C
 from ads1115 import ADS1115
 
 ads = ADS1115(I2C(0), channels=(0,3))
+results = [0, 0]
 
-
-### single tight-loop ###
-
+### infinite loop ###
 while True:
     for i in range(2):
-        ads.start(i)
-        res = ads.read()
-        while res is None:
-            res = ads.read()
-        print(i, res)
+        results = ads.read_blocking(i)
+    print(*results)
 
 
 ### async polling ###
-
 async def ads_poll():
     while True:
         for i in range(2):
-            ads.start(i)
-            res = ads.read()
-            while res is None:
-                await asyncio.sleep(0)
-                res = ads.read()
-            print(i, res)
+            results = await ads.read_async(i)
+        print(*results)
 
 async def main():
     await asyncio.create_task(ads_poll())

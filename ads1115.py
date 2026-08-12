@@ -1,9 +1,15 @@
 from micropython import const
+from time import sleep_ms
+
+try:
+    from asyncio import sleep_ms as asleep_ms
+except ImportError:
+    asleep_ms = sleep_ms
 
 '''
 OS
-    1: Set to start a single-conversion
-    1: Get 1 when no conversion is in progress
+    - Set bit=1 to start a single-conversion
+    - Return bit=1 when no conversion is in progress
     
 MUX
     0: Differential P=AIN0, N=AIN1 (default)
@@ -56,6 +62,9 @@ CQUE
     3: Disable the comparator and put ALERT/RDY in high state (default)
 '''
 
+_CONV_REG  = const(0)
+_CONF_REG  = const(1)
+
 _OS_MASK   = const(15)
 _MUX_MASK  = const(12)
 _PGA_MASK  = const(9)
@@ -66,9 +75,7 @@ _CPOL_MASK = const(3)
 _CLAT_MASK = const(2)
 _CQUE_MASK = const(0)
 
-_CONV_REG  = const(0)
-_CONF_REG  = const(1)
-
+_RATE_SPS  = (8, 16, 32, 64, 128, 250, 475, 860)
 _GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 
 class ADS1115:
@@ -76,6 +83,7 @@ class ADS1115:
         self._i2c  = i2c
         self._buff = bytearray(2)
         self._addr = kwargs.get('addr', 0x48)
+
         self._mux  = kwargs.get('channels', (0,))
         self._pga  = kwargs.get('gain', 2)
         self._rate = kwargs.get('rate', 4)
@@ -83,18 +91,20 @@ class ADS1115:
         self._cpol = kwargs.get('cpol', 0)
         self._clat = kwargs.get('clat', 0)
         self._cque = kwargs.get('cque', 3)
+
         self._gain = _GAINS_V[self._pga]
+        self._hold = int(1000 / _RATE_SPS[self._rate])
 
         self._conf = []
         for i in range(len(self._mux)):
             self._conf.append((1 << _OS_MASK)|(1 << _MODE_MASK)|
-                              (self._mux[i] << _MUX_MASK) |
-                              (self._pga    << _PGA_MASK) |
-                              (self._rate   << _RATE_MASK)|
-                              (self._cmod   << _CMOD_MASK)|
-                              (self._cpol   << _CPOL_MASK)|
-                              (self._clat   << _CLAT_MASK)|
-                              (self._cque   << _CQUE_MASK))
+                              (self._mux[i] << _MUX_MASK)|
+                              (self._pga   <<  _PGA_MASK)|
+                              (self._rate  << _RATE_MASK)|
+                              (self._cmod  << _CMOD_MASK)|
+                              (self._cpol  << _CPOL_MASK)|
+                              (self._clat  << _CLAT_MASK)|
+                              (self._cque  << _CQUE_MASK))
         self._conf = tuple(self._conf)
 
     def start(self, channel: int = 0) -> None:
@@ -108,3 +118,21 @@ class ADS1115:
         _tmp = (self._buff[0] << 8) | self._buff[1]
         if _tmp & (1 << 15): _tmp -= (1 << 16)
         return _tmp * self._gain / (1 << 15)
+
+    def read_blocking(self, channel: int = 0) -> None|float:
+        self.start(channel)
+        sleep_ms(self._hold)
+        _tmp = self.read()
+        while _tmp is None:
+            sleep_ms(1)
+            _tmp = self.read()
+        return _tmp
+
+    async def read_async(self, channel: int = 0) -> None|float:
+        self.start(channel)
+        await asleep_ms(self._hold)
+        _tmp = self.read()
+        while _tmp is None:
+            await asleep_ms(1)
+            _tmp = self.read()
+        return _tmp
