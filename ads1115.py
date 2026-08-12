@@ -85,6 +85,11 @@ class ADS1115:
         self._addr = kwargs.get('addr', 0x48)
 
         self._mux  = kwargs.get('channels', (0,))
+        if isinstance(self._mux, int):
+            self._mux = tuple(self._mux,)
+        elif isinstance(self._mux, list):
+            self._mux = tuple(self._mux)
+        
         self._pga  = kwargs.get('gain', 2)
         self._rate = kwargs.get('rate', 4)
         self._cmod = kwargs.get('cmod', 0)
