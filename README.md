@@ -55,9 +55,10 @@ while True:
 
 ### async polling ###
 async def ads_poll():
+    global results
     while True:
         for i in range(2):
-            results = await ads.read_async(i)
+            results[i] = await ads.read_async(i)
         print(*results)
 
 async def main():
