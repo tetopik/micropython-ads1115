@@ -73,9 +73,9 @@ _CPOL_POS = const(3)
 _CLAT_POS = const(2)
 _CQUE_POS = const(0)
 
-_OS_READY  = const(1 << _OS_POS)
-_RATES_SPS = (8, 16, 32, 64, 128, 250, 475, 860)
-_GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
+_OS_READY = const(1 << _OS_POS)
+_GAINS_V  = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
+_DR_SPS   = (8, 16, 32, 64, 128, 250, 475, 860)
 
 class ADS1115:
     def __init__(self, i2c,
@@ -102,7 +102,7 @@ class ADS1115:
         self._cque = cque
 
         self._gain = _GAINS_V[self._pga]
-        self._hold = int(1000 / _RATES_SPS[self._rate])
+        self._hold = int(1000 / _DR_SPS[self._rate])
         self._buff = bytearray(2)
 
         self._conf = []
