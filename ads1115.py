@@ -1,15 +1,13 @@
 from micropython import const
 from time import sleep_ms
 
-try:
-    from asyncio import sleep_ms as asleep_ms
-except ImportError:
-    asleep_ms = sleep_ms
+try: from asyncio import sleep_ms as asleep_ms
+except ImportError: pass
 
 '''
 OS
-    - Set bit=1 to start a single-conversion
-    - Return bit=1 when no conversion is in progress
+    1: [W] Set to start a single-conversion
+    1: [R] Bit=1 when no conversion is in progress
     
 MUX
     0: Differential P=AIN0, N=AIN1 (default)
@@ -62,54 +60,62 @@ CQUE
     3: Disable the comparator and put ALERT/RDY in high state (default)
 '''
 
-_CONV_REG  = const(0)
-_CONF_REG  = const(1)
+_CONV_REG = const(0)
+_CONF_REG = const(1)
 
-_OS_MASK   = const(15)
-_MUX_MASK  = const(12)
-_PGA_MASK  = const(9)
-_MODE_MASK = const(8)
-_RATE_MASK = const(5)
-_CMOD_MASK = const(4)
-_CPOL_MASK = const(3)
-_CLAT_MASK = const(2)
-_CQUE_MASK = const(0)
+_OS_POS   = const(15)
+_MUX_POS  = const(12)
+_PGA_POS  = const(9)
+_MODE_POS = const(8)
+_RATE_POS = const(5)
+_CMOD_POS = const(4)
+_CPOL_POS = const(3)
+_CLAT_POS = const(2)
+_CQUE_POS = const(0)
 
-_RATE_SPS  = (8, 16, 32, 64, 128, 250, 475, 860)
+_OS_READY  = const(1 << _OS_POS)
+_RATES_SPS = (8, 16, 32, 64, 128, 250, 475, 860)
 _GAINS_V   = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 
 class ADS1115:
-    def __init__(self, i2c, **kwargs) -> None:
-        self._i2c  = i2c
-        self._buff = bytearray(2)
-        self._addr = kwargs.get('addr', 0x48)
+    def __init__(self, i2c,
+                 addr: int = 0x48,
+                 channels: tuple = (0,),
+                 gain: int = 2,
+                 mode: int = 1,
+                 rate: int = 4,
+                 cmod: int = 0,
+                 cpol: int = 0,
+                 clat: int = 0,
+                 cque: int = 3
+        ) -> None:
 
-        self._mux  = kwargs.get('channels', (0,))
-        if isinstance(self._mux, int):
-            self._mux = tuple(self._mux,)
-        elif isinstance(self._mux, list):
-            self._mux = tuple(self._mux)
-        
-        self._pga  = kwargs.get('gain', 2)
-        self._rate = kwargs.get('rate', 4)
-        self._cmod = kwargs.get('cmod', 0)
-        self._cpol = kwargs.get('cpol', 0)
-        self._clat = kwargs.get('clat', 0)
-        self._cque = kwargs.get('cque', 3)
+        self._i2c  = i2c
+        self._addr = addr
+        self._mux  = channels
+        self._pga  = gain
+        self._mode = mode
+        self._rate = rate
+        self._cmod = cmod
+        self._cpol = cpol
+        self._clat = clat
+        self._cque = cque
 
         self._gain = _GAINS_V[self._pga]
-        self._hold = int(1000 / _RATE_SPS[self._rate])
+        self._hold = int(1000 / _RATES_SPS[self._rate])
+        self._buff = bytearray(2)
 
         self._conf = []
         for i in range(len(self._mux)):
-            self._conf.append((1 << _OS_MASK)|(1 << _MODE_MASK)|
-                              (self._mux[i] << _MUX_MASK)|
-                              (self._pga   <<  _PGA_MASK)|
-                              (self._rate  << _RATE_MASK)|
-                              (self._cmod  << _CMOD_MASK)|
-                              (self._cpol  << _CPOL_MASK)|
-                              (self._clat  << _CLAT_MASK)|
-                              (self._cque  << _CQUE_MASK))
+            self._conf.append((self._mode   <<  _OS_POS)|
+                              (self._mux[i] << _MUX_POS)|
+                              (self._pga   <<  _PGA_POS)|
+                              (self._mode  << _MODE_POS)|
+                              (self._rate  << _RATE_POS)|
+                              (self._cmod  << _CMOD_POS)|
+                              (self._cpol  << _CPOL_POS)|
+                              (self._clat  << _CLAT_POS)|
+                              (self._cque  << _CQUE_POS))
         self._conf = tuple(self._conf)
 
     def start(self, channel: int = 0) -> None:
@@ -118,7 +124,7 @@ class ADS1115:
 
     def read(self) -> None|float:
         self._i2c.readfrom_mem_into(self._addr, _CONF_REG, self._buff)
-        if not (self._buff[0] << 8) & (1 << _OS_MASK): return None
+        if not (self._buff[0] << 8) & _OS_READY: return None
         self._i2c.readfrom_mem_into(self._addr, _CONV_REG, self._buff)
         _tmp = (self._buff[0] << 8) | self._buff[1]
         if _tmp & (1 << 15): _tmp -= (1 << 16)
