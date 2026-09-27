@@ -69,7 +69,7 @@ while True:
         continue
     i = (i + 1) % num
     ads.start(i)
-    if not i:
+    if i == 0:
         print(*results)
 ```
 
@@ -85,7 +85,12 @@ async def poll_ads():
             results[i] = await ads.read_async(i)
         print(*results)
 
-asyncio.run(poll_ads())
+async def main():
+    asuncio.create_task(poll_ads())
+    while True:
+        await asyncio.sleep_ms(1000)
+
+asyncio.run(main())
 ```
 ```py
 import asyncio
@@ -98,14 +103,19 @@ async def poll_ads():
     
     ads.start(i)
     while True:
-        await sleep_ms(100)
+        await asyncio.sleep_ms(100)
         results[i] = ads.read(i)
         if results[i] is None:
             continue
         i = (i + 1) % num
         ads.start(i)
-        if not i:
+        if i == 0:
             print(*results)
 
-asyncio.run(poll_ads())
+async def main():
+    asuncio.create_task(poll_ads())
+    while True:
+        await asyncio.sleep_ms(1000)
+
+asyncio.run(main())
 ```
