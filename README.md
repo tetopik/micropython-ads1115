@@ -37,33 +37,75 @@ rate
 ```
 
 ---
-- main.py:
+- constructor:
 ```py
-import asyncio
 from machine import I2C
 from ads1115 import ADS1115
-
 
 channels = (4, 5)  # 4: Single-ended AIN0, 5: Single-ended AIN1
 ads = ADS1115(I2C(0), channels=channels)
 results = [0] * len(channels)
+```
 
-### infinite loop ###
+---
+- `read_blocking()`:
+```py
 while True:
-    for i in range(2):
+    for i in range(len(results)):
         results[i] = ads.read_blocking(i)
     print(*results)
+```
+```py
+from time import sleep_ms
 
-### async polling ###
-async def ads_poll():
+num = len(channels)
+i = 0
+
+ads.start(i)
+while True:
+    sleep_ms(100)
+    results[i] = ads.read(i)
+    if results[i] is None:
+        continue
+    i = (i + 1) % num
+    ads.start(i)
+    if not i:
+        print(*results)
+```
+
+---
+- `read_async()`:
+```py
+import asyncio
+
+async def poll_ads():
     global results
     while True:
-        for i in range(2):
+        for i in range(len(results)):
             results[i] = await ads.read_async(i)
         print(*results)
 
-async def main():
-    await asyncio.create_task(ads_poll())
+asyncio.run(poll_ads())
+```
+```py
+import asyncio
 
-asyncio.run(main())
+async def poll_ads():
+    global results
+
+    num = len(channels)
+    i = 0
+    
+    ads.start(i)
+    while True:
+        await sleep_ms(100)
+        results[i] = ads.read(i)
+        if results[i] is None:
+            continue
+        i = (i + 1) % num
+        ads.start(i)
+        if not i:
+            print(*results)
+
+asyncio.run(poll_ads())
 ```
