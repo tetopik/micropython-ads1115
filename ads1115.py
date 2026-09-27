@@ -1,14 +1,15 @@
 from micropython import const
 from time import sleep_ms
 
-try: from asyncio import sleep_ms as asleep_ms
+try:
+    from asyncio import sleep_ms as asleep_ms
 except ImportError: pass
 
 '''
 OS
     1: [W] Set to start a single-conversion
     1: [R] Bit=1 when no conversion is in progress
-    
+
 MUX
     0: Differential P=AIN0, N=AIN1 (default)
     1: Differential P=AIN0, N=AIN3
@@ -18,7 +19,7 @@ MUX
     5: Single-ended AIN1
     6: Single-ended AIN2
     7: Single-ended AIN3
-    
+
 PGA
     0: +/-6.144V range = Gain 2/3
     1: +/-4.096V range = Gain 1
@@ -77,60 +78,52 @@ _OS_READY = const(1 << _OS_POS)
 _GAINS_V  = (6.144, 4.096, 2.048, 1.024, 0.512, 0.256)
 _DR_SPS   = (8, 16, 32, 64, 128, 250, 475, 860)
 
+
 class ADS1115:
-    def __init__(self, i2c,
-                 addr: int = 0x48,
-                 channels: tuple = (0,),
-                 gain: int = 2,
-                 mode: int = 1,
-                 rate: int = 4,
-                 cmod: int = 0,
-                 cpol: int = 0,
-                 clat: int = 0,
-                 cque: int = 3
-        ) -> None:
+    def __int__(self, i2c, **kwargs):
+        self.i2c  = i2c
+        self.addr = kwargs.get('addr', 0x48)
 
-        self._i2c  = i2c
-        self._addr = addr
-        self._mux  = channels
-        self._pga  = gain
-        self._mode = mode
-        self._rate = rate
-        self._cmod = cmod
-        self._cpol = cpol
-        self._clat = clat
-        self._cque = cque
+        _mux  = kwargs.get('channels', (0,))
+        _pga  = kwargs.get('gain', 2)
+        _mode = kwargs.get('mode', 1)
+        _rate = kwargs.get('rate', 4)
+        _cmod = kwargs.get('cmod', 0)
+        _cpol = kwargs.get('cpol', 0)
+        _clat = kwargs.get('clat', 0)
+        _cque = kwargs.get('cque', 3)
 
-        self._gain = _GAINS_V[self._pga]
-        self._hold = int(1000 / _DR_SPS[self._rate])
+        self._gain = _GAINS_V[_pga]
+        self._hold = int(1000 / _DR_SPS[_rate])
         self._buff = bytearray(2)
 
         self._conf = []
-        for i in range(len(self._mux)):
-            self._conf.append((self._mode   <<  _OS_POS)|
-                              (self._mux[i] << _MUX_POS)|
-                              (self._pga   <<  _PGA_POS)|
-                              (self._mode  << _MODE_POS)|
-                              (self._rate  << _RATE_POS)|
-                              (self._cmod  << _CMOD_POS)|
-                              (self._cpol  << _CPOL_POS)|
-                              (self._clat  << _CLAT_POS)|
-                              (self._cque  << _CQUE_POS))
+        for i in range(len(_mux)):
+            self._conf.append(
+                (_mode   <<   _OS_POS) |
+                (_mux[i] <<  _MUX_POS) |
+                (_pga    <<  _PGA_POS) |
+                (_mode   << _MODE_POS) |
+                (_rate   << _RATE_POS) |
+                (_cmod   << _CMOD_POS) |
+                (_cpol   << _CPOL_POS) |
+                (_clat   << _CLAT_POS) |
+                (_cque   << _CQUE_POS) )
         self._conf = tuple(self._conf)
 
     def start(self, channel: int = 0) -> None:
         self._buff[0], self._buff[1] = self._conf[channel] >> 8, self._conf[channel] & 0xff
-        self._i2c.writeto_mem(self._addr, _CONF_REG, self._buff)
+        self.i2c.writeto_mem(self.addr, _CONF_REG, self._buff)
 
-    def read(self) -> None|float:
-        self._i2c.readfrom_mem_into(self._addr, _CONF_REG, self._buff)
+    def read(self) -> None | float:
+        self.i2c.readfrom_mem_into(self.addr, _CONF_REG, self._buff)
         if not (self._buff[0] << 8) & _OS_READY: return None
-        self._i2c.readfrom_mem_into(self._addr, _CONV_REG, self._buff)
+        self.i2c.readfrom_mem_into(self.addr, _CONV_REG, self._buff)
         _tmp = (self._buff[0] << 8) | self._buff[1]
         if _tmp & (1 << 15): _tmp -= (1 << 16)
         return _tmp * self._gain / (1 << 15)
 
-    def read_blocking(self, channel: int = 0) -> None|float:
+    def read_blocking(self, channel: int = 0) -> None | float:
         self.start(channel)
         sleep_ms(self._hold)
         _tmp = self.read()
@@ -139,7 +132,7 @@ class ADS1115:
             _tmp = self.read()
         return _tmp
 
-    async def read_async(self, channel: int = 0) -> None|float:
+    async def read_async(self, channel: int = 0) -> None | float:
         self.start(channel)
         await asleep_ms(self._hold)
         _tmp = self.read()
